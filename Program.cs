@@ -57,26 +57,23 @@ app.MapRazorComponents<App>()
 
 // Controllers LAST
 app.MapControllers();
-// === Seed roles + admin user ===
-await RoleSeeder.SeedAsync(app.Services);
 
-// Seed Vendors + Adverts
+// === Apply migrations + seed data ===
 using (var scope = app.Services.CreateScope())
 {
     var services = scope.ServiceProvider;
-    var context = services.GetRequiredService<ApplicationDbContext>();
+    var db = services.GetRequiredService<ApplicationDbContext>();
     var userManager = services.GetRequiredService<UserManager<ApplicationUser>>();
-    await VendorAdvertSeeder.SeedVendorsAndAdvertsAsync(context, userManager);
-}
 
-// Apply migrations at startup
-using (var scope = app.Services.CreateScope())
-{
-    var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+    // ✅ Run migrations first
     db.Database.Migrate();
+
+    // ✅ Seed roles + admin user
+    await RoleSeeder.SeedAsync(services);
+
+    // ✅ Seed vendors + adverts
+    await VendorAdvertSeeder.SeedVendorsAndAdvertsAsync(db, userManager);
 }
-
-
 
 // === Debug Info (always prints your fixed URL) ===
 Console.WriteLine("=== App is running ===");
