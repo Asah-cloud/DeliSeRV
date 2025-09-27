@@ -69,6 +69,14 @@ using (var scope = app.Services.CreateScope())
     await VendorAdvertSeeder.SeedVendorsAndAdvertsAsync(context, userManager);
 }
 
+// Apply migrations at startup
+using (var scope = app.Services.CreateScope())
+{
+    var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+    db.Database.Migrate();
+}
+
+
 
 // === Debug Info (always prints your fixed URL) ===
 Console.WriteLine("=== App is running ===");
