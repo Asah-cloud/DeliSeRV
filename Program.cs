@@ -5,8 +5,9 @@ using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// ✅ Force Kestrel to listen on a specific URL
-builder.WebHost.UseUrls("http://localhost:5229");
+// ✅ Use Render’s PORT if available, else default to 5229 locally
+var port = Environment.GetEnvironmentVariable("PORT") ?? "5229";
+builder.WebHost.UseUrls($"http://0.0.0.0:{port}");
 
 // === Database ===
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
@@ -75,8 +76,11 @@ using (var scope = app.Services.CreateScope())
     await VendorAdvertSeeder.SeedVendorsAndAdvertsAsync(db, userManager);
 }
 
-// === Debug Info (always prints your fixed URL) ===
+// === Debug Info (prints nicer URL) ===
 Console.WriteLine("=== App is running ===");
-Console.WriteLine("Listening on: http://localhost:5229");
+if (app.Environment.IsDevelopment())
+    Console.WriteLine($"Listening on: http://localhost:{port}");
+else
+    Console.WriteLine($"Listening on: http://0.0.0.0:{port}");
 
 app.Run();

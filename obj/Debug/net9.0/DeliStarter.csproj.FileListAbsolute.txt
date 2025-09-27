@@ -214,3 +214,4 @@ C:\Users\Delisa\DeliStarter\obj\Debug\net9.0\refint\DeliStarter.dll
 C:\Users\Delisa\DeliStarter\obj\Debug\net9.0\DeliStarter.pdb
 C:\Users\Delisa\DeliStarter\obj\Debug\net9.0\DeliStarter.genruntimeconfig.cache
 C:\Users\Delisa\DeliStarter\obj\Debug\net9.0\ref\DeliStarter.dll
+C:\Users\Delisa\DeliStarter\obj\Debug\net9.0\DeliStarter.sourcelink.json
