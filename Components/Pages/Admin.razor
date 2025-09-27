@@ -1,0 +1,130 @@
+@page "/admin"
+@using Microsoft.AspNetCore.Authorization
+@using DeliStarter.Data
+@using Microsoft.AspNetCore.Identity
+@using Microsoft.EntityFrameworkCore
+@inject UserManager<ApplicationUser> UserManager
+@inject RoleManager<IdentityRole> RoleManager
+@inject IHttpContextAccessor HttpContextAccessor
+
+@attribute [Authorize(Roles = "Admin")]
+
+<h3>Admin Dashboard</h3>
+<p>Welcome, Admin! 🎉</p>
+
+<!-- Navigation to other management pages -->
+<div class="mb-3">
+    <a href="/admin/vendors" class="btn btn-outline-info me-2">Manage Vendors</a>
+    <a href="/admin/adverts" class="btn btn-outline-warning">Manage Adverts</a>
+</div>
+
+
+<!-- 🔍 Search + Reset -->
+<div class="mb-3 d-flex">
+    <form method="get" action="/admin/search" class="d-flex">
+        <input type="text" name="query" placeholder="Search..."
+               class="form-control me-2" value="@searchQuery" />
+        <button type="submit" class="btn btn-primary">Search</button>
+    </form>
+
+    <a href="/admin" class="btn btn-secondary ms-2">Reset</a>
+</div>
+
+@if (filteredUsers == null || !filteredUsers.Any())
+{
+    <p>No users found.</p>
+}
+else
+{
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>Email</th>
+                <th>Username</th>
+                <th>Role</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var user in filteredUsers)
+            {
+                <tr>
+                    <td>@user.Email</td>
+                    <td>@user.UserName</td>
+                    <td>
+                        <!-- ✅ Inline Role Change -->
+                        <form method="post" action="@($"/admin/updaterole/{user.Id}")" style="display:inline;">
+                            <input type="hidden" name="__RequestVerificationToken" value="@token" />
+                            <select name="role" class="form-select form-select-sm d-inline-block" style="width:150px;"
+                                    onchange="this.form.submit()">
+                                <option value="User" selected="@("User" == GetUserRole(user))">User</option>
+                                <option value="Vendor" selected="@("Vendor" == GetUserRole(user))">Vendor</option>
+                                <option value="Admin" selected="@("Admin" == GetUserRole(user))">Admin</option>
+                            </select>
+                        </form>
+                    </td>
+                    <td>
+                        <!-- Edit via page -->
+                        <a class="btn btn-sm btn-primary" href="@($"/admin/edit/{user.Id}")">Edit</a>
+
+                        <!-- Delete via controller -->
+                        <form method="post" action="@($"/admin/delete/{user.Id}")" style="display:inline;">
+                            <input type="hidden" name="__RequestVerificationToken" value="@token" />
+                            <button type="submit" class="btn btn-danger btn-sm">Delete</button>
+                        </form>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+@code {
+    private List<ApplicationUser> users = new();
+    private List<ApplicationUser> filteredUsers = new();
+    private Dictionary<string, string> userRoles = new();
+    private string? searchQuery;
+    private string? token;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var httpContext = HttpContextAccessor?.HttpContext;
+        searchQuery = httpContext?.Request.Query["search"].ToString();
+
+        // Load users
+        users = await UserManager.Users.AsNoTracking().ToListAsync();
+
+        // Precompute roles
+        foreach (var u in users)
+        {
+            var roles = await UserManager.GetRolesAsync(u);
+            userRoles[u.Id] = roles.FirstOrDefault() ?? "User";
+        }
+
+        // Apply search if provided
+        if (!string.IsNullOrWhiteSpace(searchQuery))
+        {
+            filteredUsers = users
+                .Where(u =>
+                    (!string.IsNullOrEmpty(u.Email) && u.Email.Contains(searchQuery, StringComparison.OrdinalIgnoreCase)) ||
+                    (!string.IsNullOrEmpty(u.UserName) && u.UserName.Contains(searchQuery, StringComparison.OrdinalIgnoreCase))
+                )
+                .ToList();
+        }
+        else
+        {
+            filteredUsers = users.ToList();
+        }
+
+        // Anti-forgery token for delete/role forms
+        token = httpContext?.RequestServices
+            .GetRequiredService<Microsoft.AspNetCore.Antiforgery.IAntiforgery>()
+            .GetAndStoreTokens(httpContext!).RequestToken;
+    }
+
+    private string GetUserRole(ApplicationUser user)
+    {
+        if (user == null) return "User";
+        return userRoles.TryGetValue(user.Id, out var r) ? r : "User";
+    }
+}

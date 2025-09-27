@@ -1,0 +1,53 @@
+@page "/admin/edit/{id}"
+@using DeliStarter.Data
+@using Microsoft.AspNetCore.Identity
+@inject UserManager<ApplicationUser> UserManager
+@inject NavigationManager Navigation
+@inject IHttpContextAccessor HttpContextAccessor
+
+<h3>Edit User</h3>
+
+@if (string.IsNullOrEmpty(userEmail))
+{
+    <p>Loading user...</p>
+}
+else
+{
+    <form method="post" action="/admin/update/@id">
+        <input type="hidden" name="__RequestVerificationToken" value="@token" />
+
+        <div class="mb-3">
+            <label>Email</label>
+            <input type="email" name="email" value="@userEmail" class="form-control" required />
+        </div>
+
+        <button type="submit" class="btn btn-success">Save</button>
+        <button type="button" class="btn btn-secondary" @onclick="GoBack">Cancel</button>
+    </form>
+}
+
+@code {
+    [Parameter] public string id { get; set; } = string.Empty;
+    private string? userEmail;
+    private string? token;
+
+    protected override async Task OnInitializedAsync()
+    {
+        // ✅ Generate antiforgery token
+        token = HttpContextAccessor?.HttpContext?
+            .RequestServices.GetRequiredService<Microsoft.AspNetCore.Antiforgery.IAntiforgery>()
+            .GetAndStoreTokens(HttpContextAccessor.HttpContext!).RequestToken;
+
+        // ✅ Load user from database
+        var user = await UserManager.FindByIdAsync(id);
+        if (user != null)
+        {
+            userEmail = user.Email;
+        }
+    }
+
+    private void GoBack()
+    {
+        Navigation.NavigateTo("/admin");
+    }
+}

@@ -1,0 +1,44 @@
+@page "/vendor/adverts/new"
+@using DeliStarter.Data
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.AspNetCore.Identity
+@inject IHttpContextAccessor HttpContextAccessor
+@inject UserManager<ApplicationUser> UserManager
+
+@attribute [Authorize(Roles = "Vendor")]
+
+<h3>Create New Advert</h3>
+
+<form method="post" action="/vendor/adverts/create">
+    <input type="hidden" name="__RequestVerificationToken" value="@token" />
+
+    <div class="mb-3">
+        <label class="form-label">Title</label>
+        <input type="text" name="title" class="form-control" required />
+    </div>
+
+    <div class="mb-3">
+        <label class="form-label">Description</label>
+        <textarea name="description" class="form-control" rows="4" required></textarea>
+    </div>
+
+    <div class="mb-3">
+        <label class="form-label">Price</label>
+        <input type="number" name="price" step="0.01" class="form-control" required />
+    </div>
+
+    <button type="submit" class="btn btn-success">Save</button>
+    <a href="/vendor/dashboard" class="btn btn-secondary">Cancel</a>
+</form>
+
+@code {
+    private string? token;
+
+    protected override void OnInitialized()
+    {
+        // ✅ Generate antiforgery token
+        token = HttpContextAccessor?.HttpContext?
+            .RequestServices.GetRequiredService<Microsoft.AspNetCore.Antiforgery.IAntiforgery>()
+            .GetAndStoreTokens(HttpContextAccessor.HttpContext!).RequestToken;
+    }
+}

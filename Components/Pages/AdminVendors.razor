@@ -1,0 +1,76 @@
+@page "/admin/vendors"
+@using DeliStarter.Data
+@using Microsoft.AspNetCore.Identity
+@using Microsoft.EntityFrameworkCore
+@inject ApplicationDbContext Db
+@inject IHttpContextAccessor HttpContextAccessor
+
+<a href="/admin" class="btn btn-secondary mb-3">⬅ Back to Dashboard</a>
+<h3>Vendor Management</h3>
+
+
+@if (vendors == null || !vendors.Any())
+{
+    <p>No vendors found.</p>
+}
+else
+{
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>Display Name</th>
+                <th>Email</th>
+                <th>Bio</th>
+                <th>Created</th>
+                <th>Approved</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var v in vendors)
+            {
+                <tr>
+                    <td>@v.DisplayName</td>
+                    <td>@v.ApplicationUser?.Email</td>
+                    <td>@v.Bio</td>
+                    <td>@v.CreatedAt.ToShortDateString()</td>
+                    <td>@(v.IsApproved ? "✅" : "❌")</td>
+                    <td>
+                        <!-- Approve/Reject -->
+                        <form method="post" action="/admin/vendors/toggle/@v.Id" style="display:inline;">
+                            <input type="hidden" name="__RequestVerificationToken" value="@token" />
+                            <button type="submit" class="btn btn-sm btn-warning">
+                                @(v.IsApproved ? "Reject" : "Approve")
+                            </button>
+                        </form>
+
+                        <!-- Delete -->
+                        <form method="post" action="/admin/vendors/delete/@v.Id" style="display:inline;">
+                            <input type="hidden" name="__RequestVerificationToken" value="@token" />
+                            <button type="submit" class="btn btn-sm btn-danger">Delete</button>
+                        </form>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+@code {
+    private List<Vendor> vendors = new();
+    private string? token;
+
+    protected override async Task OnInitializedAsync()
+    {
+        // Load vendors with linked ApplicationUser
+        vendors = await Db.Vendors
+            .Include(v => v.ApplicationUser)
+            .AsNoTracking()
+            .ToListAsync();
+
+        // Antiforgery token
+        token = HttpContextAccessor?.HttpContext?
+            .RequestServices.GetRequiredService<Microsoft.AspNetCore.Antiforgery.IAntiforgery>()
+            .GetAndStoreTokens(HttpContextAccessor.HttpContext!).RequestToken;
+    }
+}

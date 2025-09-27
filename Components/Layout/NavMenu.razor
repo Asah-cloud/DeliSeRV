@@ -1,0 +1,75 @@
+﻿@using DeliStarter.Data
+@using Microsoft.AspNetCore.Identity
+@inject SignInManager<ApplicationUser> SignInManager
+@inject UserManager<ApplicationUser> UserManager
+@inject IHttpContextAccessor HttpContextAccessor
+
+<div class="top-row ps-3 navbar navbar-dark">
+    <div class="container-fluid">
+        <a class="navbar-brand" href="">DeliSeRV</a>
+    </div>
+</div>
+
+<input type="checkbox" title="Navigation menu" class="navbar-toggler" />
+
+<div class="nav-scrollable" onclick="document.querySelector('.navbar-toggler').click()">
+    <nav class="nav flex-column">
+        <!-- Home -->
+        <div class="nav-item px-3">
+            <NavLink class="nav-link" href="" Match="NavLinkMatch.All">
+                <span class="bi bi-house-door-fill-nav-menu" aria-hidden="true"></span> Home
+            </NavLink>
+        </div>
+
+        <!-- Always show Browse Adverts -->
+        <div class="nav-item px-3">
+            <NavLink class="nav-link" href="/adverts">
+                <span class="oi oi-list" aria-hidden="true"></span> Browse Adverts
+            </NavLink>
+        </div>
+
+        @if (HttpContextAccessor.HttpContext?.User?.Identity?.IsAuthenticated ?? false)
+        {
+            var user = HttpContextAccessor.HttpContext.User;
+
+            if (user.IsInRole("Admin"))
+            {
+                <div class="nav-item px-3">
+                    <NavLink class="nav-link" href="/admin">
+                        <span class="oi oi-cog"></span> Admin Dashboard
+                    </NavLink>
+                </div>
+            }
+            else if (user.IsInRole("Vendor"))
+            {
+                <div class="nav-item px-3">
+                    <NavLink class="nav-link" href="/vendor/dashboard">
+                        <span class="oi oi-briefcase"></span> Vendor Dashboard
+                    </NavLink>
+                </div>
+            }
+
+            <!-- Logout -->
+            <div class="nav-item px-3">
+                <NavLink class="nav-link" href="/logout">
+                    <span class="oi oi-account-logout" aria-hidden="true"></span> Logout
+                </NavLink>
+            </div>
+        }
+        else
+        {
+            <!-- Register + Login for guests -->
+            <div class="nav-item px-3">
+                <NavLink class="nav-link" href="/register">
+                    <span class="oi oi-plus"></span> Register
+                </NavLink>
+            </div>
+
+            <div class="nav-item px-3">
+                <NavLink class="nav-link" href="/login">
+                    <span class="oi oi-account-login" aria-hidden="true"></span> Login
+                </NavLink>
+            </div>
+        }
+    </nav>
+</div>

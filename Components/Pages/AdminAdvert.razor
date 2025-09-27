@@ -1,0 +1,68 @@
+@page "/admin/adverts"
+@using DeliStarter.Data
+@using Microsoft.EntityFrameworkCore
+@inject ApplicationDbContext Db
+@inject IHttpContextAccessor HttpContextAccessor
+
+<a href="/admin" class="btn btn-secondary mb-3">⬅ Back to Dashboard</a>
+<h3>Advert Management</h3>
+
+
+@if (adverts == null || !adverts.Any())
+{
+    <p>No adverts found.</p>
+}
+else
+{
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>Title</th>
+                <th>Description</th>
+                <th>Price</th>
+                <th>Vendor</th>
+                <th>Created</th>
+                <th>Status</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var ad in adverts)
+            {
+                <tr>
+                    <td>@ad.Title</td>
+                    <td>@ad.Description</td>
+                    <td>@ad.Price.ToString("C")</td>
+                    <td>@ad.Vendor?.DisplayName</td>
+                    <td>@ad.CreatedAt.ToShortDateString()</td>
+                    <td>@(ad.IsActive ? "✅ Active" : "❌ Inactive")</td>
+                    <td>
+                        <!-- Delete -->
+                        <form method="post" action="/admin/advert/delete/@ad.Id" style="display:inline;">
+                            <input type="hidden" name="__RequestVerificationToken" value="@token" />
+                            <button type="submit" class="btn btn-danger btn-sm">Delete</button>
+                        </form>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+@code {
+    private List<Advert> adverts = new();
+    private string? token;
+
+    protected override async Task OnInitializedAsync()
+    {
+        adverts = await Db.Adverts
+            .Include(a => a.Vendor)
+            .AsNoTracking()
+            .ToListAsync();
+
+        token = HttpContextAccessor?.HttpContext?
+            .RequestServices
+            .GetRequiredService<Microsoft.AspNetCore.Antiforgery.IAntiforgery>()
+            .GetAndStoreTokens(HttpContextAccessor.HttpContext!).RequestToken;
+    }
+}

@@ -1,0 +1,98 @@
+@page "/vendor/dashboard"
+@using DeliStarter.Data
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.AspNetCore.Identity
+@using Microsoft.EntityFrameworkCore
+@inject UserManager<ApplicationUser> UserManager
+@inject ApplicationDbContext Db
+@inject IHttpContextAccessor HttpContextAccessor
+
+@attribute [Authorize(Roles = "Vendor")]
+
+<h3>Vendor Dashboard</h3>
+
+@if (vendor == null)
+{
+    <p>You are not registered as a vendor. Please contact admin.</p>
+}
+else
+{
+    <div class="card mb-3">
+        <div class="card-body">
+            <h5 class="card-title">@vendor.DisplayName</h5>
+            <p class="card-text">@vendor.Bio</p>
+            <p><strong>Member since:</strong> @vendor.CreatedAt.ToShortDateString()</p>
+            <p><strong>Status:</strong> @(vendor.IsApproved ? "✅ Approved" : "⏳ Pending")</p>
+        </div>
+    </div>
+
+    <h4>Your Adverts</h4>
+
+    @if (adverts == null || !adverts.Any())
+    {
+        <p>No adverts yet. <a href="/vendor/adverts/new" class="btn btn-sm btn-success mb-2">+ Add Advert</a>
+</p>
+    }
+    else
+    {
+        <a href="/vendor/adverts/create" class="btn btn-sm btn-success mb-2">+ Add Advert</a>
+
+        <table class="table table-striped">
+            <thead>
+                <tr>
+                    <th>Title</th>
+                    <th>Price</th>
+                    <th>Created</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var ad in adverts)
+                {
+                    <tr>
+                        <td>@ad.Title</td>
+                        <td>@ad.Price.ToString("C")</td>
+                        <td>@ad.CreatedAt.ToShortDateString()</td>
+                        <td>@(ad.IsActive ? "✅ Active" : "❌ Inactive")</td>
+                        <td>
+                            <a href="/vendor/adverts/edit/@ad.Id" class="btn btn-sm btn-primary">Edit</a>
+                            <form method="post" action="/vendor/adverts/delete/@ad.Id" style="display:inline;">
+                                <input type="hidden" name="__RequestVerificationToken" value="@token" />
+                                <button type="submit" class="btn btn-sm btn-danger">Delete</button>
+                            </form>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
+}
+
+@code {
+    private Vendor? vendor;
+    private List<Advert> adverts = new();
+    private string? token;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var httpContext = HttpContextAccessor?.HttpContext;
+        var user = await UserManager.GetUserAsync(httpContext!.User);
+
+        if (user == null)
+            return;
+
+        vendor = await Db.Vendors
+            .Include(v => v.Adverts)
+            .FirstOrDefaultAsync(v => v.ApplicationUserId == user.Id);
+
+        if (vendor != null)
+        {
+            adverts = vendor.Adverts.ToList();
+        }
+
+        token = httpContext?.RequestServices
+            .GetRequiredService<Microsoft.AspNetCore.Antiforgery.IAntiforgery>()
+            .GetAndStoreTokens(httpContext!).RequestToken;
+    }
+}

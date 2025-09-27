@@ -1,0 +1,7 @@
+@page "/user"
+@using Microsoft.AspNetCore.Authorization
+@attribute [Authorize(Policy = "AdminOverride")]
+
+<h3>User Dashboard</h3>
+
+<p>Welcome, User! 🎓</p>

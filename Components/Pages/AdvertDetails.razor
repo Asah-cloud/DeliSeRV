@@ -1,0 +1,54 @@
+@page "/adverts/{id:int}"
+@using DeliStarter.Data
+@using Microsoft.EntityFrameworkCore
+@inject ApplicationDbContext Db
+
+<h3>Advert Details</h3>
+
+@if (advert == null)
+{
+    <p class="text-danger">Advert not found.</p>
+}
+else
+{
+    <div class="card mb-3">
+        <div class="card-body">
+            <h4 class="card-title">@advert.Title</h4>
+            <p class="card-text">@advert.Description</p>
+            <p><strong>Price:</strong> @advert.Price.ToString("C")</p>
+            <p><strong>Posted:</strong> @advert.CreatedAt.ToShortDateString()</p>
+            <p><strong>Status:</strong> @(advert.IsActive ? "✅ Active" : "❌ Inactive")</p>
+        </div>
+    </div>
+
+    @if (advert.Vendor != null)
+    {
+        <h5>Vendor Information</h5>
+        <div class="card">
+            <div class="card-body">
+                <p><strong>Name:</strong> @advert.Vendor.DisplayName</p>
+                <p><strong>Bio:</strong> @advert.Vendor.Bio</p>
+
+                @if (advert?.Vendor?.ApplicationUser != null)
+                {
+                    <p><strong>Email:</strong> @advert.Vendor.ApplicationUser.Email</p>
+                }
+            </div>
+        </div>
+    }
+}
+
+<a href="/adverts" class="btn btn-secondary mt-3">⬅ Back to Adverts</a>
+
+@code {
+    [Parameter] public int id { get; set; }
+    private Advert? advert;
+
+    protected override async Task OnInitializedAsync()
+    {
+        advert = await Db.Adverts
+            .Include(a => a.Vendor)
+            .ThenInclude(v => v!.ApplicationUser)
+            .FirstOrDefaultAsync(a => a.Id == id);
+    }
+}

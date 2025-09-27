@@ -1,0 +1,62 @@
+@page "/vendor/adverts/edit/{id:int}"
+@using DeliStarter.Data
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.AspNetCore.Identity
+@inject IHttpContextAccessor HttpContextAccessor
+@inject UserManager<ApplicationUser> UserManager
+@inject ApplicationDbContext Db
+
+@attribute [Authorize(Roles = "Vendor")]
+
+<h3>Edit Advert</h3>
+
+@if (advert == null)
+{
+    <p>Loading advert...</p>
+}
+else
+{
+    <form method="post" action="/vendor/adverts/update/@advert.Id">
+        <input type="hidden" name="__RequestVerificationToken" value="@token" />
+
+        <div class="mb-3">
+            <label class="form-label">Title</label>
+            <input type="text" name="title" value="@advert.Title" class="form-control" required />
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">Description</label>
+            <textarea name="description" class="form-control" rows="4" required>@advert.Description</textarea>
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">Price</label>
+            <input type="number" name="price" value="@advert.Price" step="0.01" class="form-control" required />
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">Active</label>
+            <input type="checkbox" name="isActive" value="true" checked="@advert.IsActive" />
+        </div>
+
+        <button type="submit" class="btn btn-success">Update</button>
+        <a href="/vendor/dashboard" class="btn btn-secondary">Cancel</a>
+    </form>
+}
+
+@code {
+    [Parameter] public int id { get; set; }
+    private Advert? advert;
+    private string? token;
+
+    protected override async Task OnInitializedAsync()
+    {
+        // fetch antiforgery token
+        token = HttpContextAccessor?.HttpContext?
+            .RequestServices.GetRequiredService<Microsoft.AspNetCore.Antiforgery.IAntiforgery>()
+            .GetAndStoreTokens(HttpContextAccessor.HttpContext!).RequestToken;
+
+        // load advert from DB
+        advert = await Db.Adverts.FindAsync(id);
+    }
+}

@@ -1,0 +1,52 @@
+@page "/adverts"
+@using DeliStarter.Data
+@using Microsoft.EntityFrameworkCore
+@inject ApplicationDbContext Db
+
+<h3>Browse Adverts</h3>
+
+@if (adverts == null || !adverts.Any())
+{
+    <p>No adverts available at the moment.</p>
+}
+else
+{
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>Title</th>
+                <th>Description</th>
+                <th>Price</th>
+                <th>Vendor</th>
+                <th>Posted</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var ad in adverts)
+            {
+                <tr>
+                    <td>
+                        <a href="@($"/adverts/{ad.Id}")">@ad.Title</a>
+                    </td>
+                    <td>@ad.Description</td>
+                    <td>@ad.Price.ToString("C")</td>
+                    <td>@ad.Vendor?.DisplayName</td>
+                    <td>@ad.CreatedAt.ToShortDateString()</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+@code {
+    private List<Advert> adverts = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        adverts = await Db.Adverts
+            .Include(a => a.Vendor)
+            .Where(a => a.IsActive)
+            .OrderByDescending(a => a.CreatedAt)
+            .ToListAsync();
+    }
+}
